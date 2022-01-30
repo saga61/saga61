@@ -1,0 +1,15 @@
+#include<stdio.h>
+int main()
+{
+	char ch = 'a';
+	int age = 20;
+	short int  asd = 30;
+	float f = 5.9;
+	printf("%f\n",f);
+	double d = 3.17;
+	printf("%lf\n", d);
+	printf("%d\n", asd);
+	printf("%d\n", age);
+	printf("%c\n",ch);
+	return 0;
+}
