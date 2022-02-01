@@ -1,0 +1,13 @@
+#include<stdio.h>
+int main()
+{
+	int sum = 0;
+	int dsd = 0;
+	int num = 0;
+	scanf_s("%d%d", &sum, &dsd);
+	num = dsd + sum;
+	printf("num=%d", num);
+  
+	return 0;
+
+}
