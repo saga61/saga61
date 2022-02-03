@@ -1,0 +1,886 @@
+/docxs
+*.project
+*.db
+.vscode
+ +3 -12 modules/business/src/main/java/com/nbsaas/basecloud/App.java 
+package com.nbsaas.basecloud;
+
+import com.haoxuer.bigworld.generate.template.hibernate.BigWorldHibernateDir;
+import com.haoxuer.bigworld.pay.data.entity.TenantAccount;
+import com.nbsaas.codemake.CodeMake;
+import com.nbsaas.codemake.templates.elementui.ElementUIDir;
+import com.nbsaas.codemake.templates.elementuiForm.ElementUIFormDir;
+@@ -17,17 +18,7 @@ public class App
+{
+    public static void main( String[] args )
+    {
+        CodeMake make = new CodeMake(ElementUIDir.class, BigWorldHibernateDir.class);
+        File view = new File("E:\\codes\\clouds\\basecloud\\web\\src\\main\\webapp\\WEB-INF\\ftl\\tenant\\default");
+        make.setView(view);
+
+        List<Class<?>> cs = new ArrayList<Class<?>>();
+        make.setDao(true);
+        make.setService(true);
+        make.setView(true);
+        make.setAction(true);
+        make.setApi(true);
+        make.makes(cs);
+        viewMake().make(TenantAccount.class);
+    }
+    private static CodeMake make() {
+        CodeMake make = new CodeMake(ElementUIFormDir.class, BigWorldHibernateDir.class);
+@@ -49,7 +40,7 @@ public class App
+        make.put("componentList",true);
+        make.put("componentShow",true);
+        make.put("componentUpdate",true);
+        make.put("restDomain",true);
+        make.put("restDomain",false);
+        make.put("theme","default");
+        return make;
+    }
+ -5 modules/pom.xml 
+@@ -32,11 +32,6 @@
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.haoxuer.discover</groupId>
+            <artifactId>discover-trade</artifactId>
+            <version>${discover.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.haoxuer.discover</groupId>
+            <artifactId>discover-common-config</artifactId>
+ +1 web/src/main/resources/applicationContext.xml 
+@@ -70,6 +70,7 @@
+				<value>com.haoxuer.bigworld.plugin.data.entity</value>
+				<value>com.haoxuer.bigworld.site.data.entity</value>
+				<value>com.haoxuer.bigworld.company.data.entity</value>
+				<value>com.haoxuer.bigworld.pay.data.entity</value>
+
+			</list>
+		</property>
+ +103 web/src/main/webapp/WEB-INF/ftl/tenant/default/tenantaccount/componentAdd.html 
+<!-- 增加页面开始 -->
+
+
+[#macro tenantaccountAddView]
+<div class="model-form">
+	<el-page-header @back="goBack" content="增加资金账户">
+	</el-page-header>
+	<div class="model-content">
+		<el-form ref="ruleForm" :rules="rules" :model="form" label-width="160px">
+			<el-row :gutter="10">
+				<el-col :span="22">
+					<el-form-item label="系统key" size="mini" prop="key">
+						<el-input v-model="form.key" name="key">
+						</el-input>
+					</el-form-item>
+
+				</el-col>
+				<el-col :span="22">
+					<el-form-item label="账号名称" size="mini" prop="name">
+						<el-input v-model="form.name" name="name">
+						</el-input>
+					</el-form-item>
+				</el-col>
+			</el-row>
+			<el-row>
+				<el-col :span="22" style="text-align: right;padding-bottom: 20px;padding-top: 20px;">
+					<el-button @click="goBack">取消</el-button>
+					<el-button type="primary" @click="add">确定</el-button>
+				</el-col>
+			</el-row>
+		</el-form>
+	</div>
+</div>
+[/#macro]
+
+[#macro tenantaccountAddConfig]
+<script type="text/x-template" id="my-tenantaccount-add">
+	[@tenantaccountAddView /]
+</script>
+<script type="text/javascript">
+	//添加组件开始
+	var tenantaccountAddConfig = {};
+	tenantaccountAddConfig.template = "#my-tenantaccount-add";
+	tenantaccountAddConfig.methods = config.basicMethod();
+	tenantaccountAddConfig.data = function () {
+		return {
+			form: {
+				key: '',
+				name: ''
+			},
+			rules: {
+				key: [
+					{ required: true, message: '请输入系统key', trigger: 'blur' }
+				],
+			}
+		}
+	};
+	tenantaccountAddConfig.mounted = function () {
+	}
+	tenantaccountAddConfig.computed = {};
+
+
+	tenantaccountAddConfig.methods.add = function () {
+		var self = this;
+		this.$refs["ruleForm"].validate(function (valid) {
+			if (valid) {
+				self.addData();
+			} else {
+				console.log('error submit!!');
+				return false;
+			}
+		});
+	}
+
+	tenantaccountAddConfig.methods.addData = function () {
+		var self = this, data = this.form;
+		if (this.deforeAddData) {
+			this.deforeAddData();
+		}
+		this.postData("${siteurl}tenantRest/tenantaccount/create.htm", data, function (res) {
+			if (res.code == 0) {
+				self.$message({
+					message: '添加数据成功',
+					type: 'success'
+				});
+				self.$router.go(-1);
+			} else {
+				self.$message.error(res.msg);
+			}
+		});
+	}
+
+	tenantaccountAddConfig.destroyed = function () {
+		console.log("destroyed add view ");
+
+	}
+	var tenantaccountAddView = Vue.component('add-view', tenantaccountAddConfig);
+
+
+</script>
+[/#macro]
+
+<!-- 增加页面结束 -->
+\ No newline at end of file
+ +205 web/src/main/webapp/WEB-INF/ftl/tenant/default/tenantaccount/componentList.html 
+[#macro tenantaccountListView]
+<div>
+    <el-dialog title="提示" :visible.sync="dialogVisible" width="30%">
+        <span>确认要删除该条数据吗?</span>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="dialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="handleClose">确 定</el-button>
+        </span>
+    </el-dialog>
+    <div class="search">
+        <el-form label-width="80px">
+            <el-row>
+                <el-col :span="6" style="padding: 0 8px;">
+                    <el-form-item label="系统key">
+                        <el-input v-model="searchObject.key" size="small" placeholder="系统key" name="key">
+                        </el-input>
+                    </el-form-item>
+                </el-col>
+
+                <el-col :span="18" style="padding: 0 10px;margin-top: 5px;">
+                    <el-row type="flex" justify="end">
+                        <el-button size="small" type="primary" @click="search">搜索</el-button>
+                        <el-button size="small" plain @click="clearData">清除条件</el-button>
+                    </el-row>
+                </el-col>
+            </el-row>
+        </el-form>
+    </div>
+    <div class="data-content">
+        <div class="tool-add">
+            <el-button type="primary" size="small" @click="addView">新增</el-button>
+        </div>
+
+        <el-table v-loading="loading" :data="tableData.list" @cell-click="showView" @sort-change="changeTableSort"
+            style="width: 100%;font-size: 12px;">
+            <el-table-column label="系统key" prop="key" width="100">
+            </el-table-column>
+            <el-table-column label="账号名称" prop="accountName" width="200">
+            </el-table-column>
+            <el-table-column label="账号余额" prop="amount" width="200">
+            </el-table-column>
+            <el-table-column label="创建时间" prop="addDate" >
+            </el-table-column>
+            <el-table-column width="180" align="center" fixed="right" label="操作">
+                <template slot-scope="scope">
+                    <el-button type="text" size="mini" icon="el-icon-info" @click="show(scope.row)">详情
+                    </el-button>
+
+                    <el-button type="text" size="mini" icon="el-icon-edit" @click="editView(scope.row)">编辑
+                    </el-button>
+
+                    <el-button type="text" icon="el-icon-delete" class="danger" size="mini" style="cursor: pointer;"
+                        @click="deleteData(scope.row)">删除
+                    </el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+
+        <div class="page">
+            <el-pagination background :current-page="searchObject.no" :page-sizes="[10, 20, 50, 100]"
+                :page-size="tableData.size" :pager-count="5" layout="total, sizes, prev, pager, next, jumper"
+                :page-count="tableData.totalPage" :total="tableData.total" @size-change="sizeChange"
+                @current-change="pageChange">
+            </el-pagination>
+        </div>
+    </div>
+</div>
+[/#macro]
+[#macro tenantaccountListConfig]
+<script type="text/x-template" id="my-tenantaccount-list">
+	[@tenantaccountListView /]
+</script>
+<script type="text/javascript">
+    var tenantaccountListConfig = {};
+    tenantaccountListConfig.template = "#my-tenantaccount-list";
+    tenantaccountListConfig.methods = config.basicMethod();
+
+
+    tenantaccountListConfig.methods.addView = function () {
+        this.$router.push({ path: 'add' });
+    }
+    tenantaccountListConfig.methods.editView = function (row) {
+        var self = this;
+        var data = {};
+        data.id = row.id;
+        this.$router.push({ path: 'update', query: data });
+
+    }
+
+    tenantaccountListConfig.methods.changeTableSort = function (column) {
+        this.searchObject.sortField = column.prop;
+        if ("descending" == column.order) {
+            this.searchObject.sortMethod = "desc";
+        }
+        else if ("ascending" == column.order) {
+            this.searchObject.sortMethod = "asc";
+        }
+        else {
+            this.searchObject.sortMethod = "";
+        }
+        this.getSearchList();
+    }
+    tenantaccountListConfig.methods.showView = function (row, column, cell, event) {
+        return;
+        if (cell.cellIndex > 0) {
+
+        }
+        var param = {};
+        param.id = row.id;
+        var self = this;
+        this.$router.push({ path: 'view', query: param });
+
+    }
+    tenantaccountListConfig.methods.show = function (row) {
+        var param = {};
+        param.id = row.id;
+        var self = this;
+        this.$router.push({ path: 'view', query: param });
+
+    }
+    tenantaccountListConfig.methods.sizeChange = function (event) {
+        this.searchObject.size = event;
+        this.getSearchList();
+    }
+    tenantaccountListConfig.methods.pageChange = function (index) {
+        this.searchObject.no = index;
+        this.getSearchList();
+    }
+    tenantaccountListConfig.methods.getSearchList = function () {
+        this.loading = true;
+        var data = this.searchObject, that = this;
+        $.post("${siteurl}tenantRest/tenantaccount/search.htm", data, function (result) {
+            if (result.code == 0) {
+                that.tableData = result;
+            }
+            setTimeout(function () {
+                that.loading = false;
+            }, 300)
+        });
+    }
+    tenantaccountListConfig.methods.search = function () {
+        this.searchObject.no = 1;
+        this.getSearchList();
+    }
+    tenantaccountListConfig.methods.clearData = function () {
+        this.searchObject.key = "";
+        this.searchObject.account = "";
+    }
+    tenantaccountListConfig.methods.deleteData = function (event) {
+        this.selectId = event.id;
+        this.dialogVisible = true;
+    }
+
+    tenantaccountListConfig.methods.handleClose = function (done) {
+        this.dialogVisible = false;
+        var self = this;
+        if (self.selectId) {
+            var params = {};
+            params.id = self.selectId;
+            this.postData("${siteurl}tenantRest/tenantaccount/delete.htm", params, function (res) {
+                if (res.code == 0) {
+                    self.$message({
+                        message: '删除数据成功',
+                        type: 'success'
+                    });
+                    self.getSearchList();
+                } else {
+                    self.$message.error(res.msg);
+                }
+            });
+        }
+
+    }
+
+    tenantaccountListConfig.computed = {};
+
+    tenantaccountListConfig.data = function () {
+        return {
+            searchObject: {
+                no: 1,
+                size: 10,
+                key: '',
+                account: ''
+            },
+            dialogVisible: false,
+            defaultProps: {
+                children: 'children',
+                label: 'name'
+            },
+            loading: false,
+            tableData: {},
+        }
+    };
+    tenantaccountListConfig.methods.showAddView = function () {
+        this.$router.push({ path: 'add' });
+    };
+    tenantaccountListConfig.mounted = function () {
+
+    }
+    tenantaccountListConfig.activated = function () {
+        this.getSearchList();
+    }
+    var tenantaccountListView = Vue.component('list-tenantaccount-view', tenantaccountListConfig);
+</script>
+[/#macro]
+\ No newline at end of file
+ +117 web/src/main/webapp/WEB-INF/ftl/tenant/default/tenantaccount/componentShow.html 
+
+[#macro tenantaccountShowView]
+<div  class="model-form">
+    <el-page-header @back="goBack" content="详情">
+    </el-page-header>
+
+        <el-menu :default-active="activeIndex" class="el-menu-demo" mode="horizontal" @select="handleSelect">
+            <el-menu-item index="1">
+                资金账户详情
+            </el-menu-item>
+            <el-menu-item index="2">
+                资金明细 
+            </el-menu-item>
+        </el-menu>
+        <div>
+            <router-view></router-view>
+        </div>
+
+</div>
+[/#macro]
+[#macro tenantaccountShowConfig]
+<script type="text/x-template" id="my-tenantaccount-show">
+    [@tenantaccountShowView /]
+</script>
+	<script type="text/javascript">
+		//显示组件开始
+		var tenantaccountShowConfig = {};
+		tenantaccountShowConfig.template = "#my-tenantaccount-show";
+		tenantaccountShowConfig.methods =config.basicMethod();
+		tenantaccountShowConfig.data = function () {
+			return {
+				viewModel: {
+				},
+				activeIndex: "1"
+			}
+		};
+
+		tenantaccountShowConfig.methods.handleSelect = function (index) {
+			console.log(index)
+			var selectId = this.selectId;
+			if (index == "1") {
+				this.$router.replace({ path: '/view/index', query: { id: selectId, activeIndex: 1, time: Math.random() } })
+			}
+			else if (index == "2") {
+				this.$router.replace({ path: '/view/stream', query: { id: selectId, activeIndex: 2, time: Math.random() } })
+			} else {
+
+			}
+		};
+
+		tenantaccountShowConfig.mounted = function () {
+		   	var id = this.$route.query.id;
+			var activeIndex = this.$route.query.activeIndex;
+
+			var self = this;
+			var data = {};
+			data.id = id;
+			this.selectId = data.id;
+			if (activeIndex) {
+				this.activeIndex = activeIndex;
+			}
+		}
+		var tenantaccountShowView = Vue.component('my-tenantaccount-view', tenantaccountShowConfig);
+		//显示组件结束		
+	</script>
+[/#macro]
+
+
+
+[#macro childTenantaccountView]
+    <div >
+        <el-form class="viewForm" label-width="120px">
+            <el-col :span="12">
+                <el-form-item label="系统key">
+                    <div v-html="viewModel.key">></div>
+                </el-form-item>
+            </el-col>
+            <el-col :span="12">
+                <el-form-item label="资金账号余额">
+                    <div v-html="viewModel.amount">></div>
+                </el-form-item>
+            </el-col>
+        </el-form>
+    </div>
+ [/#macro]
+
+[#macro childTenantaccountConfig]
+    <script type="text/x-template" id="child-tenantaccount-show">
+        [@childTenantaccountView /]
+    </script>
+    <script type="text/javascript">
+
+        var childTenantaccountShowConfig = {};
+        childTenantaccountShowConfig.template = "#child-tenantaccount-show";
+        childTenantaccountShowConfig.methods = config.basicMethod();
+        childTenantaccountShowConfig.data = function () {
+            return {
+                viewModel: {
+                }
+            }
+        };
+        childTenantaccountShowConfig.mounted = function () {
+            var id = this.$route.query.id;
+            var self = this;
+            var data = {};
+            data.id = id;
+            this.postData("${siteurl}tenantRest/tenantaccount/view.htm", data, function (res) {
+                if (res.code == 0) {
+                    self.viewModel = res;
+
+                }
+            });
+        }
+        var childTenantaccountShowView = Vue.component('child-tenantaccount-show', childTenantaccountShowConfig);
+    </script>
+[/#macro]
+ +122 web/src/main/webapp/WEB-INF/ftl/tenant/default/tenantaccount/componentStream.html 
+[#macro streamListView]
+<div>
+    <div class="data-content1">
+        <el-table v-loading="loading" :data="tableData.list"  @sort-change="changeTableSort"
+            style="width: 100%;font-size: 12px;">
+            <el-table-column label="流水号"  sortable="custom" prop="no" width="120">
+            </el-table-column>
+            <el-table-column label="交易前余额"  sortable="custom" prop="preAmount" width="120">
+            </el-table-column>
+            <el-table-column label="交易金额"  sortable="custom" prop="money" width="120">
+            </el-table-column>
+            <el-table-column label="交易后余额"  sortable="custom" prop="afterAmount" width="120">
+            </el-table-column>
+            <el-table-column label="账号名称" prop="name" width="120">
+            </el-table-column>
+            <el-table-column label="创建时间"  prop="date" width="160" >
+            </el-table-column>
+            <el-table-column label="备注" prop="note" >
+            </el-table-column>
+        </el-table>
+
+        <div class="page">
+            <el-pagination background :current-page="searchObject.no" :page-sizes="[10, 20, 50, 100]"
+                :page-size="tableData.size" :pager-count="5" layout="total, sizes, prev, pager, next, jumper"
+                :page-count="tableData.totalPage" :total="tableData.total" @size-change="sizeChange"
+                @current-change="pageChange">
+            </el-pagination>
+        </div>
+    </div>
+</div>
+[/#macro]
+[#macro streamListConfig]
+<script type="text/x-template" id="my-stream-list">
+	[@streamListView /]
+</script>
+<script type="text/javascript">
+    var streamListConfig = {};
+    streamListConfig.template = "#my-stream-list";
+    streamListConfig.methods = config.basicMethod();
+
+
+    streamListConfig.methods.changeTableSort = function (column) {
+        this.searchObject.sortField = column.prop;
+        if ("descending" == column.order) {
+            this.searchObject.sortMethod = "desc";
+        }
+        else if ("ascending" == column.order) {
+            this.searchObject.sortMethod = "asc";
+        }
+        else {
+            this.searchObject.sortMethod = "";
+        }
+        this.getSearchList();
+    }
+    streamListConfig.methods.show = function (row) {
+        var param = {};
+        param.id = row.id;
+        var self = this;
+        this.$router.push({ path: 'view', query: param });
+
+    }
+    streamListConfig.methods.sizeChange = function (event) {
+        this.searchObject.size = event;
+        this.getSearchList();
+    }
+    streamListConfig.methods.pageChange = function (index) {
+        this.searchObject.no = index;
+        this.getSearchList();
+    }
+    streamListConfig.methods.getSearchList = function () {
+        this.loading = true;
+        var data = this.searchObject, that = this;
+        $.post("${siteurl}tenantRest/tenantaccount/stream.htm", data, function (result) {
+            if (result.code == 0) {
+                that.tableData = result;
+            }
+            setTimeout(function () {
+                that.loading = false;
+            }, 300)
+        });
+    }
+    streamListConfig.methods.search = function () {
+        this.searchObject.no = 1;
+        this.getSearchList();
+    }
+    streamListConfig.methods.clearData = function () {
+        this.searchObject.key = "";
+        this.searchObject.account = "";
+    }
+    streamListConfig.methods.deleteData = function (event) {
+        this.selectId = event.id;
+        this.dialogVisible = true;
+    }
+
+
+    streamListConfig.computed = {};
+
+    streamListConfig.data = function () {
+        return {
+            searchObject: {
+                no: 1,
+                size: 10,
+                id: '',
+            },
+            dialogVisible: false,
+            defaultProps: {
+                children: 'children',
+                label: 'name'
+            },
+            loading: false,
+            tableData: {},
+        }
+    };
+    streamListConfig.mounted = function () {
+        var id = this.$route.query.id;
+        this.searchObject.id=id;
+        this.getSearchList();
+    }
+
+    var streamListView = Vue.component('list-stream-view', streamListConfig);
+</script>
+[/#macro]
+\ No newline at end of file
+ +106 web/src/main/webapp/WEB-INF/ftl/tenant/default/tenantaccount/componentUpdate.html 
+[#macro tenantaccountUpdateView]
+<div class="model-form">
+    <el-page-header @back="goBack" content="更新资金账户">
+    </el-page-header>
+    <div class="model-content">
+        <el-form ref="ruleForm" :rules="rules" :model="form" label-width="160px">
+            <el-row :gutter="10">
+                <el-col :span="13">
+                    <el-form-item label="系统key" size="mini" prop="key">
+                        <el-input disabled="true" v-model="form.key" name="key">
+                        </el-input>
+                    </el-form-item>
+
+                </el-col>
+                <el-col :span="13">
+					<el-form-item label="账号名称" size="mini" prop="name">
+						<el-input v-model="form.name" name="name">
+						</el-input>
+					</el-form-item>
+				</el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="13" style="text-align: right;padding-bottom: 20px;padding-top: 20px;">
+                    <el-button @click="goBack">取消</el-button>
+                    <el-button type="primary" @click="updateData">确定</el-button>
+                </el-col>
+            </el-row>
+        </el-form>
+    </div>
+</div>
+[/#macro]
+
+[#macro tenantaccountUpdateConfig]
+<script type="text/x-template" id="my-tenantaccount-update">
+    [@tenantaccountUpdateView /]
+</script>
+<script type="text/javascript">
+    //更新组件开始
+    var tenantaccountUpdateConfig = {};
+    tenantaccountUpdateConfig.template = "#my-tenantaccount-update";
+    tenantaccountUpdateConfig.methods = config.basicMethod();
+    tenantaccountUpdateConfig.methods.updateData = function () {
+        var self = this;
+        this.$refs["ruleForm"].validate(function (valid) {
+            if (valid) {
+                self.updateDataPost();
+            } else {
+                console.log('error submit!!');
+                return false;
+            }
+        });
+    }
+
+    tenantaccountUpdateConfig.methods.updateDataPost = function () {
+        var self = this, data = this.form;
+        //delete data.tenantaccountCatalog;
+        if (this.deforeUpdateData) {
+            this.deforeUpdateData();
+        }
+        this.postData("${siteurl}tenantRest/tenantaccount/update.htm", data, function (res) {
+            if (res.code == 0) {
+                self.$message({
+                    message: '修改数据成功',
+                    type: 'success'
+                });
+                //window.history.go(-1)
+                self.$router.go(-1);
+            } else {
+                self.$message.error(res.msg);
+            }
+        });
+    }
+    tenantaccountUpdateConfig.data = function () {
+        return {
+            form: {
+                name: ''
+            },
+            rules: {
+                key: [
+                    { required: true, message: '请输入系统key', trigger: 'blur' }
+                ],
+            }
+        }
+    };
+
+    tenantaccountUpdateConfig.mounted = function () {
+        var id = this.$route.query.id;
+        var self = this;
+        var data = {};
+        data.id = id;
+        this.postData("${siteurl}tenantRest/tenantaccount/view.htm", data, function (res) {
+            if (res.code == 0) {
+                self.form = res;
+            }
+        });
+    }
+    tenantaccountUpdateConfig.computed = {};
+
+    tenantaccountUpdateConfig.destroyed = function () {
+        console.log("destroyed add view ");
+
+    }
+    var tenantaccountUpdateView = Vue.component('update-view', tenantaccountUpdateConfig);
+    //更新组件结束
+</script>
+[/#macro]
+\ No newline at end of file
+ +176 web/src/main/webapp/WEB-INF/ftl/tenant/default/tenantaccount/list.html 
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>资金账户管理</title>
+	[#include "/admin/common/commons.html"]
+	[#include "/tenant/common/site.html"]
+	[#include "/tenant/default/tenantaccount/componentAdd.html"]
+	[#include "/tenant/default/tenantaccount/componentList.html"]
+	[#include "/tenant/default/tenantaccount/componentUpdate.html"]
+	[#include "/tenant/default/tenantaccount/componentShow.html"]
+	[#include "/tenant/default/tenantaccount/componentStream.html"]
+
+	[@baseHead /]
+	<script type="text/javascript"></script>
+</head>
+
+<body class="hold-transition skin-blue sidebar-mini">
+	<!-- Site wrapper -->
+	<div class="wrapper">
+
+		<header class="main-header">
+			<!-- Header Navbar: style can be found in header.less -->
+			[#include "/admin/common/nav.html"]
+		</header>
+
+		<!-- =============================================== -->
+
+		<!-- Left side column. contains the sidebar -->
+		<aside class="main-sidebar">
+			<!-- sidebar: style can be found in sidebar.less -->
+			<section class="sidebar">
+				[@user_panel /]
+				<!-- search form -->
+				[@sidebar_form /]
+				<!-- /.search form -->
+				<!-- sidebar menu: : style can be found in sidebar.less -->
+				<ul class="sidebar-menu" data-widget="tree">
+					<li class="header">主面板</li>
+					[@menustag id=1]
+					[#list list as item]
+					[@menu item "1,79,104"]
+					[/@menu]
+					[/#list]
+					[/@menustag]
+				</ul>
+			</section>
+			<!-- /.sidebar -->
+		</aside>
+
+		<!-- =============================================== -->
+
+		<!-- Content Wrapper. Contains page content -->
+		<div class="content-wrapper" id="app"   v-cloak  >
+			<!-- Content Header (Page header) -->
+			<section class="content-header">
+				<!-- 导航 -->
+				<div class="navigation">
+					<i>首页</i> <span>资金账户管理</span>
+				</div>
+			</section>
+			<!-- Main content -->
+			<section class="content">
+				<keep-alive>
+					<router-view v-if="$route.meta.keepAlive">
+					</router-view>
+				</keep-alive>
+				<router-view v-if="!$route.meta.keepAlive">
+				</router-view>
+				<!-- Default box -->
+			</section>
+
+
+			<!-- /.content -->
+		</div>
+		<!-- /.content-wrapper -->
+
+		[#include "/admin/common/footer.html"]
+
+		<!-- Control Sidebar -->
+		[#include "/admin/common/aside.html"]
+
+		<!-- /.control-sidebar -->
+		<!-- Add the sidebar's background. This div must be placed
+     immediately after the control sidebar -->
+		<div class="control-sidebar-bg"></div>
+	</div>
+	<!-- ./wrapper -->
+	[@baseScript /]
+
+	<script type="text/javascript">
+		var config = {};
+
+		config.methods = {};
+
+		[@configBasicVue /]
+
+		config.methods.goBack = function () {
+			this.$router.go(-1);
+		}
+		config.basicMethod=function(){
+		   var result={};
+		   result.postData=config.methods.postData;
+           result.postJsonData=config.methods.postJsonData;
+           result.goBack=config.methods.goBack;
+           return result;
+		}
+
+
+	</script>
+
+	
+    
+	[@tenantaccountAddConfig /]
+	[@tenantaccountListConfig /]
+	[@tenantaccountShowConfig /]
+	[@tenantaccountUpdateConfig /]
+
+	[@childTenantaccountConfig /]
+    [@streamListConfig /]
+	<script type="text/javascript">
+	
+		// 3. 创建 router 实例，然后传 `routes` 配置
+		// 你还可以传别的配置参数, 不过先这么简单着吧。
+		var appConfig = {};
+		appConfig.el = "#app";
+
+
+		   const routes = [
+				{ path: '/view',name: "tenantaccountShowView", component: tenantaccountShowView, props: true, children: [
+                    { path: "/view/index", name: "childTenantaccountShowView", component: childTenantaccountShowView },
+					{ path: "/view/stream", name: "streamListView", component: streamListView },
+					{ path: "/", component: childTenantaccountShowView }
+				]
+				 },
+				{ path: '/add',name: "tenantaccountAddView", component: tenantaccountAddView , props: true },
+				{ path: '/update', name: "tenantaccountUpdateView", component: tenantaccountUpdateView, props: true },
+				{ path: '/',name: "tenantaccountListView", component: tenantaccountListView , props: true , meta: {
+						keepAlive: true, //此组件不需要被缓存
+					}
+				}
+			]
+
+
+
+		const router = new VueRouter({
+			routes:routes // (缩写) 相当于 routes: routes
+		})
+
+		var store = new Vuex.Store({
+			state: {
+				count: 0,
+			},
+			mutations: {
+				increment:function(state) {
+					state.count++
+				},
+
+			}
+		})
